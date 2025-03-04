@@ -11,7 +11,7 @@ const Sidebar: React.FC = () => {
           <div className="flex items-center gap-2">
             <Activity className="h-8 w-8 text-blue-600" />
             <span className="text-xl font-semibold tracking-tight text-gray-900">
-              PulseAI Doc Portal
+              Pulse Portal
             </span>
           </div>
         </div>

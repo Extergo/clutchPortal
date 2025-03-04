@@ -24,12 +24,14 @@ export const PatientManagementModal: React.FC<PatientManagementModalProps> = ({
     age: 0,
     gender: "",
     contact: "",
+    email: "", // Added email field with empty initial value
     lastVisit: "",
     nextAppointment: "",
     status: "Active",
     insuranceProvider: "",
     policyNumber: "",
     profileImage: "",
+    notes: "", // Added notes field with empty initial value
   });
 
   // Reset or populate form when modal opens/changes
@@ -45,19 +47,23 @@ export const PatientManagementModal: React.FC<PatientManagementModalProps> = ({
         age: 0,
         gender: "",
         contact: "",
+        email: "", // Added email field
         lastVisit: new Date().toISOString().split("T")[0],
         nextAppointment: "",
         status: "Active",
         insuranceProvider: "",
         policyNumber: "",
         profileImage: faker.image.avatarGitHub(),
+        notes: "", // Added notes field
       });
     }
   }, [initialPatient, isOpen]);
 
   // Handle input changes
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
     setPatient((prev) => ({
@@ -71,8 +77,21 @@ export const PatientManagementModal: React.FC<PatientManagementModalProps> = ({
     e.preventDefault();
 
     // Basic validation
-    if (!patient.name || !patient.age || !patient.gender || !patient.contact) {
+    if (
+      !patient.name ||
+      !patient.age ||
+      !patient.gender ||
+      !patient.contact ||
+      !patient.email
+    ) {
       alert("Please fill in all required fields");
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(patient.email)) {
+      alert("Please enter a valid email address");
       return;
     }
 
@@ -94,7 +113,7 @@ export const PatientManagementModal: React.FC<PatientManagementModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#f0f0f0] bg-opacity-80">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
@@ -118,7 +137,10 @@ export const PatientManagementModal: React.FC<PatientManagementModalProps> = ({
             </button>
           </div>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-4 max-h-[70vh] overflow-y-auto"
+        >
           <div>
             <label
               htmlFor="name"
@@ -131,6 +153,23 @@ export const PatientManagementModal: React.FC<PatientManagementModalProps> = ({
               id="name"
               name="name"
               value={patient.name}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              required
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={patient.email}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               required
@@ -221,6 +260,23 @@ export const PatientManagementModal: React.FC<PatientManagementModalProps> = ({
               value={patient.policyNumber}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="notes"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Notes
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              value={patient.notes || ""}
+              onChange={handleChange}
+              rows={3}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="Any important information about the patient..."
             />
           </div>
           <div className="flex justify-end space-x-3">

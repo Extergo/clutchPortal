@@ -21,15 +21,29 @@ import {
   PatientManagementModal,
 } from "@/components";
 
-import { Patient, Appointment } from "@/types/types";
+// Import our new components
+import AppointmentBookingModal from "@/components/AppointmentBookingModal";
+import PatientReportModal from "@/components/PatientReportModal";
+
+import { Patient, Appointment, PatientReport } from "@/types/types";
 import { patients, appointments, stats as statsData } from "@/data/patients";
+import { format } from "date-fns";
 
 export default function Home() {
   const [patientsData, setPatientsData] = useState<Patient[]>(patients);
-  const [appointmentsData] = useState<Appointment[]>(appointments);
+  const [appointmentsData, setAppointmentsData] =
+    useState<Appointment[]>(appointments);
+  const [reportsData, setReportsData] = useState<PatientReport[]>([]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
+
+  // Modal states
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  // Selected entities for modals
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   // Helper function to get icon component by name
@@ -87,11 +101,89 @@ export default function Home() {
     setIsPatientModalOpen(true);
   };
 
+  // Handle booking an appointment
+  const handleBookAppointment = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setIsAppointmentModalOpen(true);
+  };
+
+  // Handle saving a new appointment
+  const handleSaveAppointment = (
+    patientId: string,
+    date: string,
+    time: string,
+    type: string
+  ) => {
+    const patient = patientsData.find((p) => p.id === patientId);
+    if (!patient) return;
+
+    const newAppointment: Appointment = {
+      id: `A${Math.floor(Math.random() * 10000)}`,
+      patientId,
+      patientName: patient.name,
+      profileImage: patient.profileImage,
+      date,
+      time,
+      type,
+      status: "Pending",
+    };
+
+    // Update the appointments list
+    setAppointmentsData((prev) => [newAppointment, ...prev]);
+
+    // Also update the patient's next appointment date
+    setPatientsData((prevPatients) =>
+      prevPatients.map((p) =>
+        p.id === patientId ? { ...p, nextAppointment: date } : p
+      )
+    );
+  };
+
+  // Handle viewing a patient report
+  const handleViewReport = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setIsReportModalOpen(true);
+  };
+
+  // Handle saving a patient report
+  const handleSaveReport = (patientId: string, reportContent: string) => {
+    const patient = patientsData.find((p) => p.id === patientId);
+    if (!patient) return;
+
+    // Create a new report
+    const newReport: PatientReport = {
+      id: `R${Math.floor(Math.random() * 10000)}`,
+      patientId,
+      date: new Date().toISOString(),
+      content: reportContent,
+      createdBy: "Sarah Miller", // Currently hardcoded, would come from auth in a real app
+    };
+
+    // Update reports list
+    setReportsData((prev) => [newReport, ...prev]);
+
+    // Also update the patient's notes
+    setPatientsData((prevPatients) =>
+      prevPatients.map((p) =>
+        p.id === patientId ? { ...p, notes: reportContent } : p
+      )
+    );
+  };
+
+  // Handle emailing a patient
+  const handleEmailResponse = (email: string) => {
+    // In a real application, this would integrate with an email client
+    // For now, we'll just open the default email client with the patient's email
+    window.location.href = `mailto:${email}`;
+  };
+
   // Filter patients based on search term
   const filteredPatients = patientsData.filter(
     (patient) =>
       patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.id.toLowerCase().includes(searchTerm.toLowerCase())
+      patient.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (patient.email &&
+        patient.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Filter appointments based on active filter
@@ -101,6 +193,11 @@ export default function Home() {
       : appointmentsData.filter(
           (appointment) => appointment.status === activeFilter
         );
+
+  // Get patient reports for the selected patient
+  const patientReports = selectedPatient
+    ? reportsData.filter((report) => report.patientId === selectedPatient.id)
+    : [];
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -112,6 +209,27 @@ export default function Home() {
         onDeletePatient={handleDeletePatient}
         initialPatient={selectedPatient}
       />
+
+      {/* Appointment Booking Modal */}
+      {selectedPatient && (
+        <AppointmentBookingModal
+          isOpen={isAppointmentModalOpen}
+          onClose={() => setIsAppointmentModalOpen(false)}
+          patient={selectedPatient}
+          onSaveAppointment={handleSaveAppointment}
+        />
+      )}
+
+      {/* Patient Report Modal */}
+      {selectedPatient && (
+        <PatientReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          patient={selectedPatient}
+          onSaveReport={handleSaveReport}
+          existingReports={patientReports}
+        />
+      )}
 
       {/* Sidebar */}
       <Sidebar />
@@ -171,6 +289,9 @@ export default function Home() {
                         <PatientCard
                           patient={patient}
                           onEdit={() => handleEditPatient(patient)}
+                          onBookAppointment={handleBookAppointment}
+                          onViewReport={handleViewReport}
+                          onEmailResponse={handleEmailResponse}
                         />
                       </div>
                     ))
